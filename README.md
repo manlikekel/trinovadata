@@ -24,3 +24,12 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+
+## App features for developers
+
+- **Installable app (PWA):** `public/manifest.webmanifest`, `public/sw.js` (offline cache, production only) and `public/icons/`. The install banner and the iPhone "Add to Home Screen" steps live in `src/components/app/InstallPrompt.tsx`.
+- **First-use guide:** `src/components/app/Onboarding.tsx`, state in `src/lib/onboarding.ts`. Each user sees it once per device; it can be reopened from the Help / App guide button.
+
+### When you add login
+
+Call `setGuideUser(user.id, user.name)` right after a successful sign-in, and `setGuideUser(GUEST)` on sign-out. Every user then gets the welcome guide (greeted by name) the first time they log in, and never again after they finish or skip it.

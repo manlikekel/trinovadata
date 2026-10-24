@@ -1,7 +1,22 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import {
+  AlertTriangle,
+  ArrowDown,
+  ArrowUp,
+  Award,
+  ChevronRight,
+  Download,
+  Search,
+  ShieldCheck,
+  Star,
+  Timer,
+} from "lucide-react";
 import { AppShell, TierBadge, pct } from "@/components/AppShell";
+import { ScoreRing } from "@/components/app/ScoreRing";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -17,22 +32,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { downloadCsv, useData } from "@/lib/store";
 import { comparePeriods, scoreJobs, tierLabel, type Tier } from "@/lib/scoring";
 import { cn } from "@/lib/utils";
-import {
-  AlertTriangle,
-  ArrowDown,
-  ArrowUp,
-  Award,
-  Download,
-  Search,
-  ShieldCheck,
-  Star,
-  Timer,
-} from "lucide-react";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -59,7 +61,13 @@ const ranges = {
   all: "All time",
 };
 
-function Delta({ value, goodWhenUp = true }: { value: number | null; goodWhenUp?: boolean }) {
+export function Delta({
+  value,
+  goodWhenUp = true,
+}: {
+  value: number | null;
+  goodWhenUp?: boolean;
+}) {
   if (value === null || !Number.isFinite(value)) return null;
   const up = value >= 0;
   const good = up === goodWhenUp || Math.abs(value) < 0.05;
@@ -67,8 +75,8 @@ function Delta({ value, goodWhenUp = true }: { value: number | null; goodWhenUp?
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold",
-        good ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive",
+        "num inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[11px] font-semibold",
+        good ? "bg-success/12 text-success" : "bg-destructive/10 text-destructive",
       )}
     >
       <Icon className="h-3 w-3" />
@@ -117,6 +125,7 @@ function Dashboard() {
   const catName = (id: string) => data.categories.find((c) => c.id === id)?.name ?? "—";
   const top = scored.find((r) => r.s.tier === "elite") ?? scored[0];
   const incidentDelta = delta("safety");
+  const count = (t: Tier) => scored.filter((r) => r.s.tier === t).length;
 
   const cards = [
     {
@@ -125,26 +134,30 @@ function Dashboard() {
       hint: "Target ≥ 95%",
       delta: <Delta value={delta("otif")} />,
       icon: Timer,
+      tone: "text-accent bg-accent/10",
     },
     {
       label: "Incident rate",
       value: pct(100 - avg(scored, "safety")),
-      hint: "Damage / safety incidents",
+      hint: "Damage & safety",
       delta: <Delta value={incidentDelta === null ? null : -incidentDelta} goodWhenUp={false} />,
       icon: ShieldCheck,
+      tone: "text-primary bg-primary/8",
     },
     {
       label: "Top performers",
-      value: scored.filter((r) => r.s.tier === "elite").length,
+      value: count("elite"),
       hint: "Elite · score ≥ 95",
       icon: Award,
+      tone: "text-success bg-success/12",
     },
     {
       label: "At-risk vendors",
-      value: scored.filter((r) => r.s.tier === "at-risk").length,
-      hint: "Score < 85 · action required",
+      value: count("at-risk"),
+      hint: "Score < 85 · act now",
       icon: AlertTriangle,
-      danger: true,
+      tone: "text-destructive bg-destructive/10",
+      danger: count("at-risk") > 0,
     },
   ];
 
@@ -184,77 +197,109 @@ function Dashboard() {
 
   return (
     <AppShell
-      title="Vendor scoreboard"
+      title="Scoreboard"
+      subtitle={
+        <>
+          Vendors ranked by overall score · {ranges[range as keyof typeof ranges]}
+          {range !== "all" && ", arrows vs the period before"}
+        </>
+      }
       actions={
-        <div className="flex flex-wrap gap-2">
+        <>
           {top && (
-            <Button asChild variant="outline">
+            <Button asChild variant="outline" className="bg-card">
               <Link to="/vendors/$id" params={{ id: top.v.id }}>
-                <Star className="h-4 w-4 text-success" /> Top performer
+                <Star className="h-4 w-4 fill-warning text-warning" /> Top performer
               </Link>
             </Button>
           )}
-          <Button variant="outline" onClick={exportCsv} disabled={!rows.length}>
+          <Button variant="outline" className="bg-card" onClick={exportCsv} disabled={!rows.length}>
             <Download className="h-4 w-4" /> Export CSV
           </Button>
-        </div>
+        </>
       }
     >
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-6">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {cards.map((c) => (
-          <Card key={c.label}>
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between gap-2">
-                <p className="text-sm text-muted-foreground">{c.label}</p>
-                <c.icon className={cn("h-4 w-4", c.danger ? "text-destructive" : "text-accent")} />
+          <Card key={c.label} className={cn(c.danger && "border-destructive/30")}>
+            <CardContent className="p-4 sm:p-5">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[13px] font-medium text-muted-foreground">{c.label}</p>
+                <span className={cn("grid h-8 w-8 place-items-center rounded-lg", c.tone)}>
+                  <c.icon className="h-4 w-4" />
+                </span>
               </div>
-              <div className="mt-1 flex flex-wrap items-center gap-2">
+              <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
                 <p
                   className={cn(
-                    "font-display text-3xl font-bold",
-                    c.danger && Number(c.value) > 0 && "text-destructive",
+                    "num font-display text-[26px] font-bold leading-none sm:text-[30px]",
+                    c.danger && "text-destructive",
                   )}
                 >
                   {c.value}
                 </p>
                 {c.delta}
               </div>
-              <p className="text-xs text-muted-foreground">{c.hint}</p>
+              <p className="mt-2 text-xs text-muted-foreground">{c.hint}</p>
             </CardContent>
           </Card>
         ))}
       </div>
-      {range !== "all" && (
-        <p className="-mt-3 mb-6 text-xs text-muted-foreground">
-          Arrows compare with the previous{" "}
-          {ranges[range as keyof typeof ranges].toLowerCase().replace("last ", "")}.
-        </p>
+
+      {scored.length > 0 && (
+        <Card className="mt-3 sm:mt-4">
+          <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-6 sm:p-5">
+            <p className="shrink-0 text-[13px] font-semibold">Vendor health</p>
+            <div className="flex h-2.5 flex-1 overflow-hidden rounded-full bg-muted">
+              {(["elite", "standard", "at-risk"] as const).map((t) => (
+                <div
+                  key={t}
+                  className={cn(
+                    "h-full transition-all",
+                    t === "elite"
+                      ? "bg-success"
+                      : t === "standard"
+                        ? "bg-warning"
+                        : "bg-destructive",
+                  )}
+                  style={{ width: `${(count(t) / scored.length) * 100}%` }}
+                />
+              ))}
+            </div>
+            <div className="flex shrink-0 gap-4 text-xs text-muted-foreground">
+              {(["elite", "standard", "at-risk"] as const).map((t) => (
+                <span key={t} className="inline-flex items-center gap-1.5">
+                  <span
+                    className={cn(
+                      "h-2 w-2 rounded-full",
+                      t === "elite"
+                        ? "bg-success"
+                        : t === "standard"
+                          ? "bg-warning"
+                          : "bg-destructive",
+                    )}
+                  />
+                  <span className="num font-semibold text-foreground">{count(t)}</span>{" "}
+                  {tierLabel[t]}
+                </span>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
-      <div className="mb-4 flex flex-wrap gap-3">
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <div className="mb-4 mt-8 grid grid-cols-2 gap-2 sm:gap-3 md:flex md:flex-wrap md:items-center">
+        <div className="relative col-span-2 md:w-72">
+          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search vendor name or ID"
-            className="pl-9 bg-card"
+            className="h-11 rounded-xl bg-card pl-10 md:h-10"
           />
         </div>
-        <Select value={range} onValueChange={setRange}>
-          <SelectTrigger className="w-44 bg-card">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.entries(ranges).map(([k, l]) => (
-              <SelectItem key={k} value={k}>
-                {l}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
         <Select value={cat} onValueChange={setCat}>
-          <SelectTrigger className="w-52 bg-card">
+          <SelectTrigger className="col-span-2 h-11 rounded-xl bg-card md:h-10 md:w-52">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -266,8 +311,20 @@ function Dashboard() {
             ))}
           </SelectContent>
         </Select>
+        <Select value={range} onValueChange={setRange}>
+          <SelectTrigger className="h-11 rounded-xl bg-card md:h-10 md:w-40">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(ranges).map(([k, l]) => (
+              <SelectItem key={k} value={k}>
+                {l}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Select value={status} onValueChange={setStatus}>
-          <SelectTrigger className="w-44 bg-card">
+          <SelectTrigger className="h-11 rounded-xl bg-card md:h-10 md:w-40">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -278,79 +335,145 @@ function Dashboard() {
             <SelectItem value="none">No data</SelectItem>
           </SelectContent>
         </Select>
+        <p className="col-span-2 text-xs text-muted-foreground md:ml-auto">
+          {rows.length} of {all.length} vendors
+        </p>
       </div>
 
-      <Card>
-        <CardContent className="p-0 overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>#</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Vendor</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead className="text-right">Jobs</TableHead>
-                <TableHead className="text-right">OTIF</TableHead>
-                <TableHead className="text-right">Safety</TableHead>
-                <TableHead className="text-right">HSE</TableHead>
-                <TableHead className="text-right">Score</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map(({ v, s, prev }, i) => (
-                <TableRow
-                  key={v.id}
-                  className={s.tier === "at-risk" ? "bg-destructive/5" : undefined}
-                >
-                  <TableCell>{i + 1}</TableCell>
-                  <TableCell>
-                    <TierBadge tier={s.tier} />
-                  </TableCell>
-                  <TableCell>
-                    <Link
-                      to="/vendors/$id"
-                      params={{ id: v.id }}
-                      className="font-semibold hover:text-accent"
-                    >
-                      {v.name}
-                    </Link>
-                    <p className="text-xs text-muted-foreground">{v.code}</p>
-                  </TableCell>
-                  <TableCell className="text-sm">{catName(v.categoryId)}</TableCell>
-                  <TableCell className="text-right">{s.jobs}</TableCell>
-                  <TableCell className="text-right">
-                    {pct(s.otif)}
-                    <p className="text-xs text-muted-foreground">{s.late} late</p>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {pct(s.safety)}
-                    <p className="text-xs text-muted-foreground">{s.incidents} incidents</p>
-                  </TableCell>
-                  <TableCell className="text-right">{pct(s.hse)}</TableCell>
-                  <TableCell className="text-right">
-                    <span className="font-display font-bold">{s.jobs ? s.overall : "—"}</span>
-                    {prev && prev.jobs > 0 && s.jobs > 0 && (
-                      <div>
-                        <Delta value={s.overall - prev.overall} />
-                      </div>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {rows.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={9} className="text-center py-10 text-muted-foreground">
-                    No vendors match.{" "}
-                    <Link to="/vendors" className="text-accent underline">
-                      Add a vendor
-                    </Link>
-                  </TableCell>
-                </TableRow>
+      {/* Phone: cards */}
+      <div className="space-y-3 md:hidden">
+        {rows.map(({ v, s, prev }, i) => (
+          <Link key={v.id} to="/vendors/$id" params={{ id: v.id }} className="block">
+            <Card
+              className={cn(
+                "transition active:scale-[0.99]",
+                s.tier === "at-risk" && "border-destructive/30",
               )}
-            </TableBody>
-          </Table>
-        </CardContent>
+            >
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <ScoreRing score={s.jobs ? s.overall : null} tier={s.tier} size={56} stroke={6} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="num text-xs font-semibold text-muted-foreground">
+                        #{i + 1}
+                      </span>
+                      <TierBadge tier={s.tier} />
+                      {prev && prev.jobs > 0 && s.jobs > 0 && (
+                        <Delta value={s.overall - prev.overall} />
+                      )}
+                    </div>
+                    <p className="mt-1 truncate font-semibold">{v.name}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {v.code} · {catName(v.categoryId)}
+                    </p>
+                  </div>
+                  <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
+                </div>
+                <div className="mt-3 grid grid-cols-3 divide-x rounded-xl bg-muted/50 py-2 text-center">
+                  {[
+                    ["OTIF", s.otif, `${s.late} late`],
+                    ["Safety", s.safety, `${s.incidents} inc.`],
+                    ["HSE", s.hse, `${s.jobs} jobs`],
+                  ].map(([l, val, h]) => (
+                    <div key={l as string}>
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        {l}
+                      </p>
+                      <p className="num text-sm font-bold">{pct(val as number)}</p>
+                      <p className="text-[10px] text-muted-foreground">{h}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
+        {rows.length === 0 && <Empty />}
+      </div>
+
+      {/* Tablet & desktop: table */}
+      <Card className="hidden overflow-hidden md:block">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/40 hover:bg-muted/40 [&>th]:h-11 [&>th]:text-xs [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider">
+              <TableHead className="w-12 pl-5">#</TableHead>
+              <TableHead>Vendor</TableHead>
+              <TableHead className="hidden lg:table-cell">Category</TableHead>
+              <TableHead className="text-right">Jobs</TableHead>
+              <TableHead className="text-right">OTIF</TableHead>
+              <TableHead className="text-right">Safety</TableHead>
+              <TableHead className="text-right">HSE</TableHead>
+              <TableHead className="text-right">Score</TableHead>
+              <TableHead className="pr-5">Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map(({ v, s, prev }, i) => (
+              <TableRow
+                key={v.id}
+                className={cn("num [&>td]:py-3.5", s.tier === "at-risk" && "bg-destructive/[0.03]")}
+              >
+                <TableCell className="pl-5 text-muted-foreground">{i + 1}</TableCell>
+                <TableCell>
+                  <Link
+                    to="/vendors/$id"
+                    params={{ id: v.id }}
+                    className="font-semibold hover:text-accent"
+                  >
+                    {v.name}
+                  </Link>
+                  <p className="text-xs text-muted-foreground">{v.code}</p>
+                </TableCell>
+                <TableCell className="hidden text-sm text-muted-foreground lg:table-cell">
+                  {catName(v.categoryId)}
+                </TableCell>
+                <TableCell className="text-right">{s.jobs}</TableCell>
+                <TableCell className="text-right">
+                  {pct(s.otif)}
+                  <p className="text-xs text-muted-foreground">{s.late} late</p>
+                </TableCell>
+                <TableCell className="text-right">
+                  {pct(s.safety)}
+                  <p className="text-xs text-muted-foreground">{s.incidents} incidents</p>
+                </TableCell>
+                <TableCell className="text-right">{pct(s.hse)}</TableCell>
+                <TableCell className="text-right">
+                  <span className="font-display text-base font-bold">
+                    {s.jobs ? s.overall : "—"}
+                  </span>
+                  {prev && prev.jobs > 0 && s.jobs > 0 && (
+                    <div className="mt-0.5">
+                      <Delta value={s.overall - prev.overall} />
+                    </div>
+                  )}
+                </TableCell>
+                <TableCell className="pr-5">
+                  <TierBadge tier={s.tier} />
+                </TableCell>
+              </TableRow>
+            ))}
+            {rows.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={9}>
+                  <Empty />
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </Card>
     </AppShell>
+  );
+}
+
+function Empty() {
+  return (
+    <div className="py-12 text-center text-sm text-muted-foreground">
+      No vendors match these filters.{" "}
+      <Link to="/vendors" className="font-medium text-accent underline-offset-4 hover:underline">
+        Add a vendor
+      </Link>
+    </div>
   );
 }
