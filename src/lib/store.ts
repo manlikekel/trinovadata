@@ -17,8 +17,14 @@ const KEY = "trinova-scorecard-v1";
 export const uid = () => Math.random().toString(36).slice(2, 10);
 
 const DEFAULT_CATEGORIES = [
-  "Oil & gas services", "Logistics & dispatch", "Equipment supply", "Maintenance",
-  "HSE services", "IT services", "Catering", "Security",
+  "Oil & gas services",
+  "Logistics & dispatch",
+  "Equipment supply",
+  "Maintenance",
+  "HSE services",
+  "IT services",
+  "Catering",
+  "Security",
 ].map((name, i) => ({ id: `c${i}`, name }));
 
 function day(offset: number) {
@@ -29,10 +35,42 @@ function day(offset: number) {
 
 function sample(): Data {
   const vendors: Vendor[] = [
-    { id: "v1", name: "Deltaline Drilling Services", code: "VN-104", categoryId: "c0", contact: "ops@deltaline.ng", contractValue: 45000000, archived: false },
-    { id: "v2", name: "SwiftRide Dispatch", code: "VN-212", categoryId: "c1", contact: "0803 000 0000", contractValue: 3500000, archived: false },
-    { id: "v3", name: "Bonny Marine Logistics", code: "VN-089", categoryId: "c1", contact: "info@bonnymarine.ng", contractValue: 12000000, archived: false },
-    { id: "v4", name: "Niger Valve & Pipe Supply", code: "VN-131", categoryId: "c2", contact: "sales@nvps.ng", contractValue: 20000000, archived: false },
+    {
+      id: "v1",
+      name: "Deltaline Drilling Services",
+      code: "VN-104",
+      categoryId: "c0",
+      contact: "ops@deltaline.ng",
+      contractValue: 45000000,
+      archived: false,
+    },
+    {
+      id: "v2",
+      name: "SwiftRide Dispatch",
+      code: "VN-212",
+      categoryId: "c1",
+      contact: "0803 000 0000",
+      contractValue: 3500000,
+      archived: false,
+    },
+    {
+      id: "v3",
+      name: "Bonny Marine Logistics",
+      code: "VN-089",
+      categoryId: "c1",
+      contact: "info@bonnymarine.ng",
+      contractValue: 12000000,
+      archived: false,
+    },
+    {
+      id: "v4",
+      name: "Niger Valve & Pipe Supply",
+      code: "VN-131",
+      categoryId: "c2",
+      contact: "sales@nvps.ng",
+      contractValue: 20000000,
+      archived: false,
+    },
   ];
   const profile: Record<string, { late: number; short: number; inc: number; hse: number }> = {
     v1: { late: 0.02, short: 0, inc: 0, hse: 1 },
@@ -42,17 +80,21 @@ function sample(): Data {
   };
   const jobs: Job[] = [];
   let seed = 7;
-  const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
+  const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
   for (const v of vendors) {
-    const p = profile[v.id];
+    const p = profile[v.id]!;
     for (let i = 0; i < 24; i++) {
       const due = day(-i * 7 - 2);
       const late = rnd() < p.late;
       jobs.push({
-        id: uid(), vendorId: v.id, dueDate: due,
+        id: uid(),
+        vendorId: v.id,
+        dueDate: due,
         deliveredDate: late ? day(-i * 7 + 1) : due,
-        qtyOrdered: 10, qtyDelivered: rnd() < p.short ? 8 : 10,
-        incident: rnd() < p.inc, hseCompliant: rnd() < p.hse,
+        qtyOrdered: 10,
+        qtyDelivered: rnd() < p.short ? 8 : 10,
+        incident: rnd() < p.inc,
+        hseCompliant: rnd() < p.hse,
         quality: late ? 3 : 5,
       });
     }
@@ -82,13 +124,33 @@ export function update(fn: (d: Data) => Data) {
   listeners.forEach((l) => l());
 }
 
+export function clearAll() {
+  update(() => ({ categories: DEFAULT_CATEGORIES, vendors: [], jobs: [] }));
+}
+
+export function downloadCsv(filename: string, rows: (string | number)[][]) {
+  const esc = (c: string | number) => {
+    const t = String(c);
+    return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
+  };
+  const blob = new Blob([rows.map((r) => r.map(esc).join(",")).join("\n")], { type: "text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
 export function resetToSample() {
   update(() => sample());
 }
 
 export function useData(): Data {
   return useSyncExternalStore(
-    (l) => { listeners.add(l); return () => listeners.delete(l); },
+    (l) => {
+      listeners.add(l);
+      return () => listeners.delete(l);
+    },
     load,
     () => empty,
   );

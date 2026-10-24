@@ -8,6 +8,7 @@ export type Job = {
   incident: boolean;
   hseCompliant: boolean;
   quality: number; // 1-5
+  hseNotes?: string;
   notes?: string;
 };
 
@@ -29,6 +30,7 @@ export type Score = {
   overall: number;
   late: number;
   incidents: number;
+  quality: number; // average 1-5
   tier: Tier;
 };
 
@@ -41,7 +43,18 @@ export function tierFor(overall: number, jobs: number): Tier {
 
 export function scoreJobs(jobs: Job[]): Score {
   const n = jobs.length;
-  if (n === 0) return { jobs: 0, otif: 0, safety: 0, hse: 0, overall: 0, late: 0, incidents: 0, tier: "none" };
+  if (n === 0)
+    return {
+      jobs: 0,
+      otif: 0,
+      safety: 0,
+      hse: 0,
+      overall: 0,
+      late: 0,
+      incidents: 0,
+      quality: 0,
+      tier: "none",
+    };
   const otifCount = jobs.filter(isOtif).length;
   const incidents = jobs.filter((j) => j.incident).length;
   const hseCount = jobs.filter((j) => j.hseCompliant).length;
@@ -49,9 +62,37 @@ export function scoreJobs(jobs: Job[]): Score {
   const otif = (otifCount / n) * 100;
   const safety = ((n - incidents) / n) * 100;
   const hse = (hseCount / n) * 100;
-  const overall = Math.round((otif * WEIGHTS.otif + safety * WEIGHTS.safety + hse * WEIGHTS.hse) * 10) / 10;
-  return { jobs: n, otif, safety, hse, overall, late, incidents, tier: tierFor(overall, n) };
+  const quality = jobs.reduce((a, j) => a + j.quality, 0) / n;
+  const overall =
+    Math.round((otif * WEIGHTS.otif + safety * WEIGHTS.safety + hse * WEIGHTS.hse) * 10) / 10;
+  return {
+    jobs: n,
+    otif,
+    safety,
+    hse,
+    overall,
+    late,
+    incidents,
+    quality,
+    tier: tierFor(overall, n),
+  };
 }
+
+export const isoDaysAgo = (days: number, from = new Date()) =>
+  new Date(from.getTime() - days * 864e5).toISOString().slice(0, 10);
+
+/** Scores the last `days` days and the `days` before that, for trend comparison. */
+export function comparePeriods(jobs: Job[], days: number, from = new Date()) {
+  const start = isoDaysAgo(days, from);
+  const prevStart = isoDaysAgo(days * 2, from);
+  return {
+    current: scoreJobs(jobs.filter((j) => j.dueDate >= start)),
+    previous: scoreJobs(jobs.filter((j) => j.dueDate >= prevStart && j.dueDate < start)),
+  };
+}
+
+/** A sharp fall is a drop of this many points or more versus the previous period. */
+export const SHARP_DROP = 5;
 
 export const tierLabel: Record<Tier, string> = {
   elite: "Elite",
@@ -63,6 +104,7 @@ export const tierLabel: Record<Tier, string> = {
 export const tierAction: Record<Tier, string> = {
   elite: "Eligible for performance bonus and priority job allocation.",
   standard: "Normal operation with standard monitoring.",
-  "at-risk": "Warning issued. Hold high-value jobs, schedule a review and request a corrective action plan.",
+  "at-risk":
+    "Warning issued. Hold high-value jobs, schedule a review and request a corrective action plan.",
   none: "Log jobs to start scoring this vendor.",
 };
