@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { BrandMark } from "@/components/app/Brand";
 import { useInstallAction } from "@/components/app/InstallPrompt";
 import { ScoreRing } from "@/components/app/ScoreRing";
+import { initAuth, useAuth } from "@/lib/auth";
 import { initPwa } from "@/lib/pwa";
 import type { Tier } from "@/lib/scoring";
 
@@ -75,7 +76,12 @@ const tiers = [
 
 function Index() {
   const install = useInstallAction();
-  useEffect(() => initPwa(), []);
+  const auth = useAuth();
+  const signedIn = auth.status === "signed-in";
+  useEffect(() => {
+    initPwa();
+    initAuth();
+  }, []);
 
   return (
     <div className="min-h-dvh bg-hero text-primary-foreground">
@@ -90,16 +96,28 @@ function Index() {
               </p>
             </div>
           </div>
-          {install.available && (
+          <div className="flex items-center gap-1">
+            {install.available && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={install.run}
+                aria-label="Install app"
+                className="text-primary-foreground hover:bg-white/10 hover:text-primary-foreground"
+              >
+                <Download className="h-4 w-4" />{" "}
+                <span className="hidden sm:inline">Install app</span>
+              </Button>
+            )}
             <Button
-              variant="ghost"
+              asChild
               size="sm"
-              onClick={install.run}
-              className="text-primary-foreground hover:bg-white/10 hover:text-primary-foreground"
+              variant="ghost"
+              className="text-primary-foreground ring-1 ring-white/25 hover:bg-white/10 hover:text-primary-foreground"
             >
-              <Download className="h-4 w-4" /> <span className="hidden sm:inline">Install app</span>
+              {signedIn ? <Link to="/dashboard">Open app</Link> : <Link to="/auth">Sign in</Link>}
             </Button>
-          )}
+          </div>
         </header>
 
         <section className="grid items-center gap-12 py-12 md:py-20 lg:grid-cols-[1.1fr_0.9fr]">
@@ -121,9 +139,15 @@ function Index() {
                 size="lg"
                 className="h-12 rounded-xl bg-accent px-6 text-base text-accent-foreground hover:bg-accent/90"
               >
-                <Link to="/dashboard">
-                  Open the scoreboard <ArrowRight className="h-4 w-4" />
-                </Link>
+                {signedIn ? (
+                  <Link to="/dashboard">
+                    Open the scoreboard <ArrowRight className="h-4 w-4" />
+                  </Link>
+                ) : (
+                  <Link to="/auth" search={{ mode: "signup" }}>
+                    Get started free <ArrowRight className="h-4 w-4" />
+                  </Link>
+                )}
               </Button>
               {install.available && (
                 <Button

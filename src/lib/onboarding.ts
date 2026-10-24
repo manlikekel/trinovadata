@@ -3,10 +3,9 @@ import { useSyncExternalStore } from "react";
 /**
  * First-use guide state.
  *
- * The guide is shown once per user. Until login exists everyone is the "guest" user.
- * When sign-in is added, call `setGuideUser(user.id, user.name)` right after a
- * successful login (and `setGuideUser(GUEST)` on logout): each user then sees the
- * guide the first time they sign in, and it never repeats for them on that device.
+ * The guide is shown once per user on each device. After sign-in, `lib/auth.ts` calls
+ * `setGuideUser(user.id, firstName)`, so every user sees it the first time they log in;
+ * on sign-out it calls `clearGuideUser()`.
  */
 export const GUEST = "guest";
 const KEY = (user: string) => `trinova-guide-seen:${user}`;
@@ -30,6 +29,11 @@ function seen(user: string) {
 /** Sets who is using the app and opens the guide if they have not seen it yet. */
 export function setGuideUser(user: string, name?: string) {
   emit({ user, name, open: typeof window !== "undefined" && !seen(user) });
+}
+
+/** Back to the guest user without opening the guide (used on sign-out). */
+export function clearGuideUser() {
+  emit({ user: GUEST, name: undefined, open: false });
 }
 
 /** Opens the guide for the current user if they have not completed it. */

@@ -38,7 +38,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { update, uid, useData } from "@/lib/store";
+import { deleteJob as removeJob, saveJob, setVendorArchived, useData } from "@/lib/store";
 import { comparePeriods, isOtif, scoreJobs, SHARP_DROP, tierAction, type Job } from "@/lib/scoring";
 import { cn } from "@/lib/utils";
 import { VendorForm } from "./vendors.index";
@@ -116,12 +116,13 @@ function JobForm({
       notes: "",
     },
   );
+  const [busy, setBusy] = useState(false);
   const set = (k: keyof Job, v: unknown) => setJ({ ...j, [k]: v });
   const preview = j.dueDate && j.deliveredDate ? isOtif(j) : null;
   return (
     <form
       className="space-y-5"
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault();
         if (!j.dueDate || !j.deliveredDate) {
           toast.error("Enter both the due date and the delivered date");
@@ -132,12 +133,10 @@ function JobForm({
           return;
         }
         const job = { ...j, quality: Math.min(5, Math.max(1, Math.round(j.quality || 1))) };
-        update((d) => ({
-          ...d,
-          jobs: initial
-            ? d.jobs.map((x) => (x.id === job.id ? job : x))
-            : [...d.jobs, { ...job, id: uid() }],
-        }));
+        setBusy(true);
+        const ok = await saveJob(job, !initial);
+        setBusy(false);
+        if (!ok) return;
         toast.success(initial ? "Job updated" : "Job logged");
         onDone();
       }}
@@ -148,20 +147,27 @@ function JobForm({
         </legend>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <Label>Due date</Label>
-            <Input type="date" value={j.dueDate} onChange={(e) => set("dueDate", e.target.value)} />
+            <Label htmlFor="f-due-date">Due date</Label>
+            <Input
+              id="f-due-date"
+              type="date"
+              value={j.dueDate}
+              onChange={(e) => set("dueDate", e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
-            <Label>Delivered</Label>
+            <Label htmlFor="f-delivered">Delivered</Label>
             <Input
+              id="f-delivered"
               type="date"
               value={j.deliveredDate}
               onChange={(e) => set("deliveredDate", e.target.value)}
             />
           </div>
           <div className="space-y-1.5">
-            <Label>Qty ordered</Label>
+            <Label htmlFor="f-qty-ordered">Qty ordered</Label>
             <Input
+              id="f-qty-ordered"
               type="number"
               inputMode="numeric"
               min={0}
@@ -170,8 +176,9 @@ function JobForm({
             />
           </div>
           <div className="space-y-1.5">
-            <Label>Qty delivered</Label>
+            <Label htmlFor="f-qty-delivered">Qty delivered</Label>
             <Input
+              id="f-qty-delivered"
               type="number"
               inputMode="numeric"
               min={0}
@@ -243,14 +250,15 @@ function JobForm({
       </fieldset>
 
       <div className="space-y-1.5">
-        <Label>Other notes</Label>
+        <Label htmlFor="f-other-notes">Other notes</Label>
         <Input
+          id="f-other-notes"
           value={j.notes ?? ""}
           onChange={(e) => set("notes", e.target.value)}
           placeholder="Optional"
         />
       </div>
-      <Button type="submit" size="lg" className="w-full">
+      <Button type="submit" size="lg" className="w-full" disabled={busy}>
         {initial ? "Save changes" : "Save job"}
       </Button>
     </form>
@@ -290,17 +298,13 @@ function VendorPage() {
   const change = current.jobs && previous.jobs ? current.overall - previous.overall : null;
   const sharp = change !== null && change <= -SHARP_DROP;
   const category = data.categories.find((c) => c.id === v.categoryId)?.name;
-  const toggleArchive = () => {
-    update((d) => ({
-      ...d,
-      vendors: d.vendors.map((x) => (x.id === id ? { ...x, archived: !x.archived } : x)),
-    }));
-    toast.success(v.archived ? "Vendor restored" : "Vendor archived");
+  const toggleArchive = async () => {
+    if (await setVendorArchived(id, !v.archived))
+      toast.success(v.archived ? "Vendor restored" : "Vendor archived");
   };
-  const deleteJob = (j: Job) => {
+  const deleteJob = async (j: Job) => {
     if (!confirm("Delete this job?")) return;
-    update((d) => ({ ...d, jobs: d.jobs.filter((x) => x.id !== j.id) }));
-    toast.success("Job deleted");
+    if (await removeJob(j.id)) toast.success("Job deleted");
   };
 
   return (

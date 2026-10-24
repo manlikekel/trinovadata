@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { update, uid, useData, type Vendor } from "@/lib/store";
+import { saveVendor, useData, type Vendor } from "@/lib/store";
 import { scoreJobs } from "@/lib/scoring";
 import { cn } from "@/lib/utils";
 
@@ -45,11 +45,12 @@ export function VendorForm({ initial, onDone }: { initial?: Vendor; onDone: () =
       archived: false,
     },
   );
+  const [busy, setBusy] = useState(false);
   const set = (k: keyof Vendor, v: string | number) => setF({ ...f, [k]: v });
   return (
     <form
       className="space-y-4"
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault();
         if (!f.name.trim()) {
           toast.error("Vendor name is required");
@@ -68,24 +69,27 @@ export function VendorForm({ initial, onDone }: { initial?: Vendor; onDone: () =
           toast.error(`Vendor ID ${f.code} is already in use`);
           return;
         }
-        update((d) => ({
-          ...d,
-          vendors: initial
-            ? d.vendors.map((v) => (v.id === f.id ? f : v))
-            : [...d.vendors, { ...f, id: uid() }],
-        }));
+        setBusy(true);
+        const ok = await saveVendor(f, !initial);
+        setBusy(false);
+        if (!ok) return;
         toast.success(initial ? "Vendor updated" : "Vendor added");
         onDone();
       }}
     >
       <div>
-        <Label className="mb-1.5 block">Name</Label>
-        <Input value={f.name} onChange={(e) => set("name", e.target.value)} />
+        <Label className="mb-1.5 block" htmlFor="f-name">
+          Name
+        </Label>
+        <Input id="f-name" value={f.name} onChange={(e) => set("name", e.target.value)} />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label className="mb-1.5 block">Vendor ID</Label>
+          <Label className="mb-1.5 block" htmlFor="f-vendor-id">
+            Vendor ID
+          </Label>
           <Input
+            id="f-vendor-id"
             value={f.code}
             onChange={(e) => set("code", e.target.value)}
             placeholder="VN-001"
@@ -108,19 +112,24 @@ export function VendorForm({ initial, onDone }: { initial?: Vendor; onDone: () =
         </div>
       </div>
       <div>
-        <Label className="mb-1.5 block">Contact</Label>
-        <Input value={f.contact} onChange={(e) => set("contact", e.target.value)} />
+        <Label className="mb-1.5 block" htmlFor="f-contact">
+          Contact
+        </Label>
+        <Input id="f-contact" value={f.contact} onChange={(e) => set("contact", e.target.value)} />
       </div>
       <div>
-        <Label className="mb-1.5 block">Contract value (₦)</Label>
+        <Label className="mb-1.5 block" htmlFor="f-contract-value">
+          Contract value (₦)
+        </Label>
         <Input
+          id="f-contract-value"
           type="number"
           min={0}
           value={f.contractValue}
           onChange={(e) => set("contractValue", Number(e.target.value))}
         />
       </div>
-      <Button type="submit" size="lg" className="w-full">
+      <Button type="submit" size="lg" className="w-full" disabled={busy}>
         Save vendor
       </Button>
     </form>

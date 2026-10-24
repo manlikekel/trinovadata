@@ -7,6 +7,7 @@ import {
   Award,
   ChevronRight,
   Download,
+  Loader2,
   Search,
   ShieldCheck,
   Star,
@@ -32,7 +33,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { downloadCsv, useData } from "@/lib/store";
+import { downloadCsv, loadDemoData, useData } from "@/lib/store";
 import { comparePeriods, scoreJobs, tierLabel, type Tier } from "@/lib/scoring";
 import { cn } from "@/lib/utils";
 
@@ -468,12 +469,37 @@ function Dashboard() {
 }
 
 function Empty() {
+  const { vendors } = useData();
+  const [busy, setBusy] = useState(false);
+  if (!vendors.length)
+    return (
+      <div className="rounded-2xl border border-dashed px-6 py-14 text-center">
+        <p className="font-semibold">No vendors yet</p>
+        <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
+          Add your first vendor and log their jobs, or explore with 10 demo vendors.
+        </p>
+        <div className="mt-5 flex flex-wrap justify-center gap-2">
+          <Button asChild>
+            <Link to="/vendors">Add a vendor</Link>
+          </Button>
+          <Button
+            variant="outline"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              await loadDemoData();
+              setBusy(false);
+            }}
+          >
+            {busy && <Loader2 className="h-4 w-4 animate-spin" />}
+            Load demo data
+          </Button>
+        </div>
+      </div>
+    );
   return (
     <div className="py-12 text-center text-sm text-muted-foreground">
-      No vendors match these filters.{" "}
-      <Link to="/vendors" className="font-medium text-accent underline-offset-4 hover:underline">
-        Add a vendor
-      </Link>
+      No vendors match these filters.
     </div>
   );
 }
