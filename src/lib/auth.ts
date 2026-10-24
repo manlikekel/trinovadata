@@ -96,7 +96,7 @@ export async function signOut() {
   await supabase().auth.signOut();
 }
 
-/** Owners can rename their company (e.g. after signing up with Google). */
+/** Owners can rename their company. */
 export async function renameCompany(name: string) {
   if (!state.orgId) return "Not signed in";
   const { error } = await supabase().from("organizations").update({ name }).eq("id", state.orgId);
@@ -105,5 +105,5 @@ export async function renameCompany(name: string) {
   return null;
 }
 
-/** Placeholder name the database gives a company created without one (Google sign-up). */
+/** Placeholder name the database gives a company created without one. */
 export const UNNAMED_COMPANY = "My company";

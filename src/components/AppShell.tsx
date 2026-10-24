@@ -312,7 +312,7 @@ function AccountMenu({
   );
 }
 
-/** Google sign-ups arrive without a company name; ask once before the welcome guide. */
+/** Safety net: an owner whose company has no name yet is asked for one before the welcome guide. */
 function CompanyNamePrompt() {
   const auth = useAuth();
   const [name, setName] = useState("");

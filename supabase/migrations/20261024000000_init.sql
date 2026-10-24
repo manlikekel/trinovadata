@@ -132,8 +132,8 @@ grant update (name) on public.organizations to authenticated;
 revoke all on public.organizations, public.memberships, public.categories, public.vendors, public.jobs from anon;
 
 -- ---------------------------------------------------------------------------
--- New sign-ups (email or Google): create the company, make the user its owner, add default
--- categories. Google sign-ups have no company name yet; the app asks for one after login.
+-- New sign-ups: create the company, make the user its owner, add default categories.
+-- If no company name was given, the app asks the owner for one after login.
 -- ---------------------------------------------------------------------------
 
 create function public.handle_new_user()
