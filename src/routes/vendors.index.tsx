@@ -35,7 +35,7 @@ export function VendorForm({ initial, onDone }: { initial?: Vendor; onDone: () =
       className="space-y-4"
       onSubmit={(e) => {
         e.preventDefault();
-        if (!f.name.trim()) return toast.error("Vendor name is required");
+        if (!f.name.trim()) { toast.error("Vendor name is required"); return; }
         update((d) => ({
           ...d,
           vendors: initial ? d.vendors.map((v) => (v.id === f.id ? f : v)) : [...d.vendors, { ...f, id: uid() }],

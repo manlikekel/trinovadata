@@ -44,7 +44,7 @@ function Categories() {
               }} />
               <span className="text-xs text-muted-foreground whitespace-nowrap">{count} vendors</span>
               <Button variant="ghost" size="sm" onClick={() => {
-                if (count) return toast.error("Move its vendors to another category first");
+                if (count) { toast.error("Move its vendors to another category first"); return; }
                 update((d) => ({ ...d, categories: d.categories.filter((x) => x.id !== c.id) }));
               }}>Delete</Button>
             </CardContent></Card>

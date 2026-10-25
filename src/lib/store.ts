@@ -44,7 +44,7 @@ function sample(): Data {
   let seed = 7;
   const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
   for (const v of vendors) {
-    const p = profile[v.id];
+    const p = profile[v.id]!;
     for (let i = 0; i < 24; i++) {
       const due = day(-i * 7 - 2);
       const late = rnd() < p.late;
