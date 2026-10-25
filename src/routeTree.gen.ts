@@ -11,8 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AlertsRouteImport } from './routes/alerts'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as VendorsIndexRouteImport } from './routes/vendors.index'
 import { Route as VendorsIdRouteImport } from './routes/vendors.$id'
 
@@ -26,6 +28,11 @@ const AlertsRoute = AlertsRouteImport.update({
   path: '/alerts',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CategoriesRoute = CategoriesRouteImport.update({
   id: '/categories',
   path: '/categories',
@@ -34,6 +41,11 @@ const CategoriesRoute = CategoriesRouteImport.update({
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VendorsIndexRoute = VendorsIndexRouteImport.update({
@@ -50,16 +62,20 @@ const VendorsIdRoute = VendorsIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/alerts': typeof AlertsRoute
+  '/auth': typeof AuthRoute
   '/categories': typeof CategoriesRoute
   '/dashboard': typeof DashboardRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/vendors/$id': typeof VendorsIdRoute
   '/vendors/': typeof VendorsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/alerts': typeof AlertsRoute
+  '/auth': typeof AuthRoute
   '/categories': typeof CategoriesRoute
   '/dashboard': typeof DashboardRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/vendors/$id': typeof VendorsIdRoute
   '/vendors': typeof VendorsIndexRoute
 }
@@ -67,8 +83,10 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/alerts': typeof AlertsRoute
+  '/auth': typeof AuthRoute
   '/categories': typeof CategoriesRoute
   '/dashboard': typeof DashboardRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/vendors/$id': typeof VendorsIdRoute
   '/vendors/': typeof VendorsIndexRoute
 }
@@ -77,19 +95,30 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/alerts'
+    | '/auth'
     | '/categories'
     | '/dashboard'
+    | '/reset-password'
     | '/vendors/$id'
     | '/vendors/'
   fileRoutesByTo: FileRoutesByTo
   to:
-    '/' | '/alerts' | '/categories' | '/dashboard' | '/vendors/$id' | '/vendors'
+    | '/'
+    | '/alerts'
+    | '/auth'
+    | '/categories'
+    | '/dashboard'
+    | '/reset-password'
+    | '/vendors/$id'
+    | '/vendors'
   id:
     | '__root__'
     | '/'
     | '/alerts'
+    | '/auth'
     | '/categories'
     | '/dashboard'
+    | '/reset-password'
     | '/vendors/$id'
     | '/vendors/'
   fileRoutesById: FileRoutesById
@@ -97,8 +126,10 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AlertsRoute: typeof AlertsRoute
+  AuthRoute: typeof AuthRoute
   CategoriesRoute: typeof CategoriesRoute
   DashboardRoute: typeof DashboardRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   VendorsIdRoute: typeof VendorsIdRoute
   VendorsIndexRoute: typeof VendorsIndexRoute
 }
@@ -119,6 +150,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AlertsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/categories': {
       id: '/categories'
       path: '/categories'
@@ -131,6 +169,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/vendors/': {
@@ -153,8 +198,10 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AlertsRoute: AlertsRoute,
+  AuthRoute: AuthRoute,
   CategoriesRoute: CategoriesRoute,
   DashboardRoute: DashboardRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   VendorsIdRoute: VendorsIdRoute,
   VendorsIndexRoute: VendorsIndexRoute,
 }
