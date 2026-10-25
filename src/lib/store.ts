@@ -1,21 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { toast } from "sonner";
-import {
-  friendlyError,
-  fromCategory,
-  fromJob,
-  fromVendor,
-  planImport,
-  toCategory,
-  toJob,
-  toVendor,
-  type CategoryRow,
-  type JobRow,
-  type VendorRow,
-} from "./db";
-import { sampleData } from "./sample";
 import type { Job } from "./scoring";
-import { supabase } from "./supabase";
 
 export type Category = { id: string; name: string };
 export type Vendor = {
@@ -28,274 +12,84 @@ export type Vendor = {
   archived: boolean;
 };
 export type Data = { categories: Category[]; vendors: Vendor[]; jobs: Job[] };
-export type DataStatus = "idle" | "loading" | "ready" | "error";
 
-export const uid = () => crypto.randomUUID();
+const KEY = "trinova-scorecard-v1";
+export const uid = () => Math.random().toString(36).slice(2, 10);
 
-/* ---------------------------------------------------------------- state */
+const DEFAULT_CATEGORIES = [
+  "Oil & gas services", "Logistics & dispatch", "Equipment supply", "Maintenance",
+  "HSE services", "IT services", "Catering", "Security",
+].map((name, i) => ({ id: `c${i}`, name }));
 
-const empty: Data = { categories: [], vendors: [], jobs: [] };
-let data: Data = empty;
-let status: { status: DataStatus; orgId: string | null; error?: string } = {
-  status: "idle",
-  orgId: null,
-};
+function day(offset: number) {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  return d.toISOString().slice(0, 10);
+}
+
+function sample(): Data {
+  const vendors: Vendor[] = [
+    { id: "v1", name: "Deltaline Drilling Services", code: "VN-104", categoryId: "c0", contact: "ops@deltaline.ng", contractValue: 45000000, archived: false },
+    { id: "v2", name: "SwiftRide Dispatch", code: "VN-212", categoryId: "c1", contact: "0803 000 0000", contractValue: 3500000, archived: false },
+    { id: "v3", name: "Bonny Marine Logistics", code: "VN-089", categoryId: "c1", contact: "info@bonnymarine.ng", contractValue: 12000000, archived: false },
+    { id: "v4", name: "Niger Valve & Pipe Supply", code: "VN-131", categoryId: "c2", contact: "sales@nvps.ng", contractValue: 20000000, archived: false },
+  ];
+  const profile: Record<string, { late: number; short: number; inc: number; hse: number }> = {
+    v1: { late: 0.02, short: 0, inc: 0, hse: 1 },
+    v2: { late: 0.08, short: 0.02, inc: 0.03, hse: 0.95 },
+    v3: { late: 0.3, short: 0.1, inc: 0.15, hse: 0.7 },
+    v4: { late: 0.1, short: 0.05, inc: 0.05, hse: 0.9 },
+  };
+  const jobs: Job[] = [];
+  let seed = 7;
+  const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
+  for (const v of vendors) {
+    const p = profile[v.id]!;
+    for (let i = 0; i < 24; i++) {
+      const due = day(-i * 7 - 2);
+      const late = rnd() < p.late;
+      jobs.push({
+        id: uid(), vendorId: v.id, dueDate: due,
+        deliveredDate: late ? day(-i * 7 + 1) : due,
+        qtyOrdered: 10, qtyDelivered: rnd() < p.short ? 8 : 10,
+        incident: rnd() < p.inc, hseCompliant: rnd() < p.hse,
+        quality: late ? 3 : 5,
+      });
+    }
+  }
+  return { categories: DEFAULT_CATEGORIES, vendors, jobs };
+}
+
+let state: Data | null = null;
 const listeners = new Set<() => void>();
-const emit = () => listeners.forEach((l) => l());
-const subscribe = (l: () => void) => {
-  listeners.add(l);
-  return () => listeners.delete(l);
-};
+const empty: Data = { categories: [], vendors: [], jobs: [] };
+
+function load(): Data {
+  if (state) return state;
+  if (typeof window === "undefined") return empty;
+  try {
+    const raw = localStorage.getItem(KEY);
+    state = raw ? JSON.parse(raw) : sample();
+  } catch {
+    state = sample();
+  }
+  return state!;
+}
+
+export function update(fn: (d: Data) => Data) {
+  state = fn(load());
+  localStorage.setItem(KEY, JSON.stringify(state));
+  listeners.forEach((l) => l());
+}
+
+export function resetToSample() {
+  update(() => sample());
+}
 
 export function useData(): Data {
   return useSyncExternalStore(
-    subscribe,
-    () => data,
+    (l) => { listeners.add(l); return () => listeners.delete(l); },
+    load,
     () => empty,
   );
-}
-
-export function useDataStatus() {
-  return useSyncExternalStore(
-    subscribe,
-    () => status,
-    () => status,
-  );
-}
-
-/* ---------------------------------------------------------------- loading */
-
-const PAGE = 1000;
-
-async function fetchAll<T>(table: string, orgId: string, order: string): Promise<T[]> {
-  const out: T[] = [];
-  for (let from = 0; ; from += PAGE) {
-    const { data: rows, error } = await supabase()
-      .from(table)
-      .select("*")
-      .eq("org_id", orgId)
-      .order(order)
-      .order("id")
-      .range(from, from + PAGE - 1);
-    if (error) throw error;
-    out.push(...(rows as T[]));
-    if (!rows || rows.length < PAGE) return out;
-  }
-}
-
-/** Loads all categories, vendors and jobs for a company. Called after sign-in. */
-export async function loadData(orgId: string) {
-  status = { status: "loading", orgId };
-  emit();
-  try {
-    const [cats, vendors, jobs] = await Promise.all([
-      fetchAll<CategoryRow>("categories", orgId, "created_at"),
-      fetchAll<VendorRow>("vendors", orgId, "name"),
-      fetchAll<JobRow>("jobs", orgId, "due_date"),
-    ]);
-    data = {
-      categories: cats.map(fromCategory),
-      vendors: vendors.map(fromVendor),
-      jobs: jobs.map(fromJob),
-    };
-    status = { status: "ready", orgId };
-  } catch (e) {
-    status = { status: "error", orgId, error: friendlyError(e as { message?: string }) };
-  }
-  emit();
-}
-
-export function resetData() {
-  data = empty;
-  status = { status: "idle", orgId: null };
-  emit();
-}
-
-const org = () => {
-  if (!status.orgId) throw new Error("Not signed in");
-  return status.orgId;
-};
-
-/**
- * Applies a change on screen immediately, then saves it. If saving fails the screen is
- * restored and the user sees why.
- */
-async function mutate(
-  optimistic: (d: Data) => Data,
-  save: () => PromiseLike<{ error: { code?: string; message?: string } | null }>,
-): Promise<boolean> {
-  const before = data;
-  data = optimistic(data);
-  emit();
-  const { error } = await save();
-  if (error) {
-    if (data !== before) {
-      data = before;
-      emit();
-    }
-    toast.error(friendlyError(error));
-    return false;
-  }
-  return true;
-}
-
-/* ---------------------------------------------------------------- actions */
-
-export function addCategory(name: string) {
-  const c = { id: uid(), name: name.trim() };
-  return mutate(
-    (d) => ({ ...d, categories: [...d.categories, c] }),
-    () => supabase().from("categories").insert(toCategory(c, org())),
-  );
-}
-
-export function renameCategory(id: string, name: string) {
-  return mutate(
-    (d) => ({ ...d, categories: d.categories.map((c) => (c.id === id ? { ...c, name } : c)) }),
-    () => supabase().from("categories").update({ name }).eq("id", id),
-  );
-}
-
-export function deleteCategory(id: string) {
-  return mutate(
-    (d) => ({ ...d, categories: d.categories.filter((c) => c.id !== id) }),
-    () => supabase().from("categories").delete().eq("id", id),
-  );
-}
-
-/** Creates the vendor when `isNew`, otherwise updates it. */
-export function saveVendor(v: Vendor, isNew: boolean) {
-  const vendor = isNew ? { ...v, id: uid() } : v;
-  return mutate(
-    (d) => ({
-      ...d,
-      vendors: isNew
-        ? [...d.vendors, vendor]
-        : d.vendors.map((x) => (x.id === vendor.id ? vendor : x)),
-    }),
-    () =>
-      isNew
-        ? supabase().from("vendors").insert(toVendor(vendor, org()))
-        : supabase().from("vendors").update(toVendor(vendor, org())).eq("id", vendor.id),
-  );
-}
-
-export function setVendorArchived(id: string, archived: boolean) {
-  return mutate(
-    (d) => ({ ...d, vendors: d.vendors.map((v) => (v.id === id ? { ...v, archived } : v)) }),
-    () => supabase().from("vendors").update({ archived }).eq("id", id),
-  );
-}
-
-/** Creates the job when `isNew`, otherwise updates it. */
-export function saveJob(j: Job, isNew: boolean) {
-  const job = isNew ? { ...j, id: uid() } : j;
-  return mutate(
-    (d) => ({
-      ...d,
-      jobs: isNew ? [...d.jobs, job] : d.jobs.map((x) => (x.id === job.id ? job : x)),
-    }),
-    () =>
-      isNew
-        ? supabase().from("jobs").insert(toJob(job, org()))
-        : supabase().from("jobs").update(toJob(job, org())).eq("id", job.id),
-  );
-}
-
-export function deleteJob(id: string) {
-  return mutate(
-    (d) => ({ ...d, jobs: d.jobs.filter((j) => j.id !== id) }),
-    () => supabase().from("jobs").delete().eq("id", id),
-  );
-}
-
-async function insertChunks(table: string, rows: object[]) {
-  for (let i = 0; i < rows.length; i += 500) {
-    const { error } = await supabase()
-      .from(table)
-      .insert(rows.slice(i, i + 500));
-    if (error) throw error;
-  }
-}
-
-/** Adds local data (demo or saved on this device) to the signed-in company. */
-export async function importData(source: Data) {
-  const orgId = org();
-  const plan = planImport(source, data.categories, uid);
-  try {
-    await insertChunks(
-      "categories",
-      plan.categories.map((c) => toCategory(c, orgId)),
-    );
-    await insertChunks(
-      "vendors",
-      plan.vendors.map((v) => toVendor(v, orgId)),
-    );
-    await insertChunks(
-      "jobs",
-      plan.jobs.map((j) => toJob(j, orgId)),
-    );
-  } catch (e) {
-    toast.error(friendlyError(e as { message?: string }));
-    await loadData(orgId);
-    return false;
-  }
-  await loadData(orgId);
-  return true;
-}
-
-/** Deletes every vendor and job in the company (jobs cascade with their vendor). */
-export async function clearAll() {
-  const orgId = org();
-  const { error } = await supabase().from("vendors").delete().eq("org_id", orgId);
-  if (error) {
-    toast.error(friendlyError(error));
-    return false;
-  }
-  await loadData(orgId);
-  return true;
-}
-
-export async function loadDemoData() {
-  return (await clearAll()) && importData(sampleData());
-}
-
-/* ---------------------------------------------------------------- data saved before login */
-
-const LOCAL_KEY = "trinova-scorecard-v1";
-
-/** Data a browser saved before accounts existed, if any. */
-export function localData(): Data | null {
-  try {
-    const raw = localStorage.getItem(LOCAL_KEY);
-    const d = raw ? (JSON.parse(raw) as Data) : null;
-    return d && Array.isArray(d.vendors) && d.vendors.length ? d : null;
-  } catch {
-    return null;
-  }
-}
-
-export function forgetLocalData() {
-  try {
-    const raw = localStorage.getItem(LOCAL_KEY);
-    if (raw) localStorage.setItem(`${LOCAL_KEY}-imported`, raw);
-    localStorage.removeItem(LOCAL_KEY);
-  } catch {
-    /* ignore */
-  }
-}
-
-/* ---------------------------------------------------------------- export */
-
-export function downloadCsv(filename: string, rows: (string | number)[][]) {
-  const esc = (c: string | number) => {
-    const t = String(c);
-    return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
-  };
-  const blob = new Blob([rows.map((r) => r.map(esc).join(",")).join("\n")], { type: "text/csv" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(a.href);
 }

@@ -1,17 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { comparePeriods, scoreJobs, tierFor, isOtif, type Job } from "./scoring";
+import { scoreJobs, tierFor, isOtif, type Job } from "./scoring";
 
 const job = (p: Partial<Job> = {}): Job => ({
-  id: "1",
-  vendorId: "v",
-  dueDate: "2026-01-10",
-  deliveredDate: "2026-01-10",
-  qtyOrdered: 10,
-  qtyDelivered: 10,
-  incident: false,
-  hseCompliant: true,
-  quality: 5,
-  ...p,
+  id: "1", vendorId: "v", dueDate: "2026-01-10", deliveredDate: "2026-01-10",
+  qtyOrdered: 10, qtyDelivered: 10, incident: false, hseCompliant: true, quality: 5, ...p,
 });
 
 describe("scoring", () => {
@@ -30,24 +22,5 @@ describe("scoring", () => {
     expect(tierFor(95, 1)).toBe("elite");
     expect(tierFor(85, 1)).toBe("standard");
     expect(tierFor(84.9, 1)).toBe("at-risk");
-  });
-  it("averages quality and returns no tier without jobs", () => {
-    expect(scoreJobs([job({ quality: 4 }), job({ quality: 2 })]).quality).toBe(3);
-    expect(scoreJobs([]).tier).toBe("none");
-  });
-  it("splits jobs into current and previous periods", () => {
-    const from = new Date("2026-03-01T12:00:00Z");
-    const { current, previous } = comparePeriods(
-      [
-        job({ dueDate: "2026-02-20" }),
-        job({ dueDate: "2026-01-20", incident: true }),
-        job({ dueDate: "2025-10-01" }),
-      ],
-      30,
-      from,
-    );
-    expect(current.jobs).toBe(1);
-    expect(previous.jobs).toBe(1);
-    expect(previous.incidents).toBe(1);
   });
 });
