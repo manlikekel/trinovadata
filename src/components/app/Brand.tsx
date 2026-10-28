@@ -20,21 +20,6 @@ export function BrandMark({ className }: { className?: string }) {
   );
 }
 
-/**
- * Full stacked logo: symbol, "TRINOVA" and "ANALYTICS LIMITED".
- * `onDark` uses white lettering for navy backgrounds.
- */
-export function BrandLogo({ className, onDark }: { className?: string; onDark?: boolean }) {
-  return (
-    <img
-      src={onDark ? "/brand/trinova-logo-on-dark.png" : "/brand/trinova-logo.png"}
-      alt="Trinova Analytics Limited"
-      draggable={false}
-      className={cn("h-24 w-auto object-contain", className)}
-    />
-  );
-}
-
 export function BrandName({ className, subtle }: { className?: string; subtle?: boolean }) {
   return (
     <div className={cn("leading-tight", className)}>

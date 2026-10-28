@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { BrandLogo } from "@/components/app/Brand";
+import { BrandMark } from "@/components/app/Brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,7 +30,7 @@ function ResetPassword() {
   return (
     <div className="pt-safe grid min-h-dvh place-items-center bg-background px-5">
       <div className="w-full max-w-sm py-10">
-        <BrandLogo className="mx-auto h-24" />
+        <BrandMark className="mx-auto h-12 w-12 rounded-[13px]" />
         {auth.status === "loading" ? (
           <Loader2 className="mx-auto mt-8 h-6 w-6 animate-spin text-muted-foreground" />
         ) : !linked ? (

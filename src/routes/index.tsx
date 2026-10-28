@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { ArrowRight, BellRing, Download, ShieldCheck, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { BrandLogo, BrandMark } from "@/components/app/Brand";
+import { BrandMark } from "@/components/app/Brand";
 import { useInstallAction } from "@/components/app/InstallPrompt";
 import { ScoreRing } from "@/components/app/ScoreRing";
 import { initAuth, useAuth } from "@/lib/auth";
@@ -267,12 +267,9 @@ function Index() {
           </div>
         </section>
 
-        <footer className="flex flex-col items-center gap-5 border-t border-white/10 pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-10 text-sm sm:flex-row sm:justify-between">
-          <BrandLogo onDark className="h-20" />
-          <div className="text-center opacity-60 sm:text-right">
-            <p>© {new Date().getFullYear()} Trinova Analytics Limited</p>
-            <p>Port Harcourt &amp; Lagos, Nigeria</p>
-          </div>
+        <footer className="flex flex-col gap-2 border-t border-white/10 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-6 text-sm opacity-60 sm:flex-row sm:justify-between">
+          <span>© {new Date().getFullYear()} Trinova Analytics Limited</span>
+          <span>Port Harcourt &amp; Lagos, Nigeria</span>
         </footer>
       </div>
       {install.dialog}
