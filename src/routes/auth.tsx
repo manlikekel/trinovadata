@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { ArrowLeft, Eye, EyeOff, Loader2, MailCheck } from "lucide-react";
-import { BrandMark } from "@/components/app/Brand";
+import { BrandLogo } from "@/components/app/Brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -65,9 +65,8 @@ function AuthPage() {
     <div className="grid min-h-dvh bg-background lg:grid-cols-[1fr_1.1fr]">
       {/* Brand panel (desktop) */}
       <aside className="relative hidden overflow-hidden bg-hero p-12 text-primary-foreground lg:flex lg:flex-col">
-        <Link to="/" className="flex items-center gap-3">
-          <BrandMark className="h-10 w-10 rounded-[11px] ring-1 ring-white/15" />
-          <span className="font-display text-[15px] font-bold">Trinova Analytics</span>
+        <Link to="/" aria-label="Trinova Analytics home" className="self-start">
+          <BrandLogo onDark className="h-32" />
         </Link>
         <div className="mt-auto max-w-md">
           <h2 className="text-4xl font-bold leading-tight">From gut feel to data.</h2>
@@ -92,10 +91,7 @@ function AuthPage() {
 
       <main className="flex flex-col px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))] sm:px-10">
         <div className="flex items-center justify-between lg:justify-end">
-          <Link to="/" className="flex items-center gap-2.5 lg:hidden">
-            <BrandMark className="h-9 w-9 rounded-[10px]" />
-            <span className="font-display text-[15px] font-bold">Trinova</span>
-          </Link>
+          <span className="lg:hidden" />
           <Link
             to="/"
             className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
@@ -105,6 +101,13 @@ function AuthPage() {
         </div>
 
         <div className="mx-auto my-auto w-full max-w-sm py-10">
+          <Link
+            to="/"
+            aria-label="Trinova Analytics home"
+            className="mb-8 flex justify-center lg:hidden"
+          >
+            <BrandLogo className="h-28" />
+          </Link>
           {auth.status === "unconfigured" ? (
             <Notice title="Sign-in isn't set up yet">
               Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to the project's .env file.

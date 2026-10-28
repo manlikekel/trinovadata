@@ -1,6 +1,6 @@
 // Trinova service worker: makes the app installable and keeps it working offline.
 // Pages: network first, falling back to the cached copy. Static assets: cache first.
-const CACHE = "trinova-v1";
+const CACHE = "trinova-v2";
 const PRECACHE = ["/", "/dashboard", "/vendors", "/alerts", "/categories", "/manifest.webmanifest", "/icons/icon-192.png"];
 
 self.addEventListener("install", (event) => {
