@@ -1,22 +1,15 @@
 import { cn } from "@/lib/utils";
 
-/** Trinova symbol (the "T" with rising bars) on a white tile, like the app icon. */
+/** Trinova symbol (the "T" with rising bars), transparent so it sits on any background. */
 export function BrandMark({ className }: { className?: string }) {
   return (
-    <span
-      className={cn(
-        "grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-[22%] bg-white",
-        className,
-      )}
-    >
-      <img
-        src="/brand/trinova-mark.png"
-        alt=""
-        aria-hidden="true"
-        draggable={false}
-        className="h-[76%] w-[76%] object-contain"
-      />
-    </span>
+    <img
+      src="/brand/trinova-mark.png"
+      alt=""
+      aria-hidden="true"
+      draggable={false}
+      className={cn("h-9 w-9 shrink-0 object-contain", className)}
+    />
   );
 }
 

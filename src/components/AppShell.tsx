@@ -84,7 +84,7 @@ export function AppShell({
       {/* Sidebar: rail on tablet, full on desktop */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-20 flex-col bg-sidebar text-sidebar-foreground md:flex xl:w-64">
         <Link to="/" className="flex items-center gap-3 px-5 pb-6 pt-6 xl:px-6">
-          <BrandMark className="h-10 w-10 ring-1 ring-white/10 rounded-[11px]" />
+          <BrandMark className="h-10 w-10" />
           <BrandName className="hidden text-sidebar-primary-foreground xl:block" subtle />
         </Link>
         <nav className="flex flex-1 flex-col gap-1 px-3">
@@ -130,7 +130,7 @@ export function AppShell({
       <header className="pt-safe sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur-xl md:hidden">
         <div className="flex h-14 items-center gap-3 px-4">
           <Link to="/" aria-label="Home">
-            <BrandMark className="h-8 w-8 rounded-[9px]" />
+            <BrandMark className="h-8 w-8" />
           </Link>
           <p className="font-display flex-1 truncate text-base font-semibold">{title}</p>
           <AccountMenu side="bottom" install={install.available ? install.run : undefined}>
@@ -197,7 +197,7 @@ function Gate({ status }: { status: ReturnType<typeof useAuth>["status"] }) {
   return (
     <div className="grid min-h-dvh place-items-center bg-background px-6">
       <div className="max-w-sm text-center">
-        <BrandMark className="mx-auto h-12 w-12 rounded-[13px]" />
+        <BrandMark className="mx-auto h-12 w-12" />
         {message ? (
           <>
             <p className="mt-5 text-sm text-muted-foreground">{message}</p>

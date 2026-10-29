@@ -66,7 +66,7 @@ function AuthPage() {
       {/* Brand panel (desktop) */}
       <aside className="relative hidden overflow-hidden bg-hero p-12 text-primary-foreground lg:flex lg:flex-col">
         <Link to="/" className="flex items-center gap-3">
-          <BrandMark className="h-10 w-10 rounded-[11px] ring-1 ring-white/15" />
+          <BrandMark className="h-10 w-10" />
           <span className="font-display text-[15px] font-bold">Trinova Analytics</span>
         </Link>
         <div className="mt-auto max-w-md">
@@ -93,7 +93,7 @@ function AuthPage() {
       <main className="flex flex-col px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))] sm:px-10">
         <div className="flex items-center justify-between lg:justify-end">
           <Link to="/" className="flex items-center gap-2.5 lg:hidden">
-            <BrandMark className="h-9 w-9 rounded-[10px]" />
+            <BrandMark className="h-9 w-9" />
             <span className="font-display text-[15px] font-bold">Trinova</span>
           </Link>
           <Link

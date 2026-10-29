@@ -88,7 +88,7 @@ function Index() {
       <div className="pt-safe mx-auto max-w-6xl px-5 sm:px-8">
         <header className="flex items-center justify-between py-5">
           <div className="flex items-center gap-3">
-            <BrandMark className="h-10 w-10 rounded-[11px] ring-1 ring-white/15" />
+            <BrandMark className="h-10 w-10" />
             <div className="leading-tight">
               <p className="font-display text-[15px] font-bold">Trinova Analytics</p>
               <p className="text-[11px] uppercase tracking-[0.16em] opacity-60">

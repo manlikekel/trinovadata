@@ -30,7 +30,7 @@ function ResetPassword() {
   return (
     <div className="pt-safe grid min-h-dvh place-items-center bg-background px-5">
       <div className="w-full max-w-sm py-10">
-        <BrandMark className="mx-auto h-12 w-12 rounded-[13px]" />
+        <BrandMark className="mx-auto h-12 w-12" />
         {auth.status === "loading" ? (
           <Loader2 className="mx-auto mt-8 h-6 w-6 animate-spin text-muted-foreground" />
         ) : !linked ? (
